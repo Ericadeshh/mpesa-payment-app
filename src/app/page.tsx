@@ -2,9 +2,9 @@ import PaymentForm from "@/components/payments/PaymentForm";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
+    <main className="min-h-screen bg-linear-to-br from-green-50 via-white to-blue-50">
       {/* Decorative background elements for visual appeal */}
-      <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-r from-green-600 to-green-400 opacity-10 -z-10" />
+      <div className="absolute top-0 left-0 w-full h-64 bg-linear-to-r from-green-600 to-green-400 opacity-10 -z-10" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500 rounded-full filter blur-3xl opacity-20 -z-10" />
       <div className="absolute top-20 right-20 w-64 h-64 bg-yellow-500 rounded-full filter blur-3xl opacity-10 -z-10" />
 
