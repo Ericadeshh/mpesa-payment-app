@@ -322,7 +322,7 @@ export const initiateSTKPush = action({
             PartyB: process.env.MPESA_SHORTCODE, // Money goes to this account
             PhoneNumber: phoneNumber, // Where to send STK push
             CallBackURL:
-              "https://illiberal-cecil-dispersible.ngrok-free.dev/api/mpesa-callback",
+              "https://mpesa-payment-app-navy.vercel.app/api/mpesa-callback",
             AccountReference: "Payment", // Reference shown to customer
             TransactionDesc: "Payment", // Description
           }),
