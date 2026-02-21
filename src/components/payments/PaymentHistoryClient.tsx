@@ -68,6 +68,20 @@ const formatPhoneDisplay = (phone: string) => {
   return phone;
 };
 
+// Format relative time (e.g., "1 min", "2 hrs", "5d")
+const formatRelativeTime = (timestamp: number) => {
+  const now = Date.now();
+  const diffInSeconds = Math.floor((now - timestamp) / 1000);
+
+  if (diffInSeconds < 60)
+    return `${diffInSeconds} sec${diffInSeconds !== 1 ? "s" : ""}`;
+  if (diffInSeconds < 3600)
+    return `${Math.floor(diffInSeconds / 60)} min${Math.floor(diffInSeconds / 60) !== 1 ? "s" : ""}`;
+  if (diffInSeconds < 86400)
+    return `${Math.floor(diffInSeconds / 3600)} hr${Math.floor(diffInSeconds / 3600) !== 1 ? "s" : ""}`;
+  return `${Math.floor(diffInSeconds / 86400)} day${Math.floor(diffInSeconds / 86400) !== 1 ? "s" : ""}`;
+};
+
 export default function PaymentHistoryClient() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<
@@ -362,22 +376,22 @@ export default function PaymentHistoryClient() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
                   Phone
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
                   Amount
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
                   Transaction ID
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
                   Checkout Request ID
                 </th>
               </tr>
@@ -399,11 +413,9 @@ export default function PaymentHistoryClient() {
                     className="hover:bg-green-50/50 transition-colors"
                   >
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      <div>{format(payment.createdAt, "MMM d, yyyy")}</div>
+                      <div>{format(payment.createdAt, "M/d/yyyy")}</div>
                       <div className="text-xs text-gray-500">
-                        {formatDistanceToNow(payment.createdAt, {
-                          addSuffix: true,
-                        })}
+                        {formatRelativeTime(payment.createdAt)} ago
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
