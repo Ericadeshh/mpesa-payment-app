@@ -1,16 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePayment } from "@/hooks/usePayment";
+import { useSearchParams } from "next/navigation";
 import Input from "../ui/Input";
 import Button from "../ui/Button";
 import PaymentStatus from "./PaymentStatus";
-import { Phone, Shield, Zap, HeadphonesIcon, CreditCard } from "lucide-react";
+import {
+  Phone,
+  Shield,
+  Zap,
+  HeadphonesIcon,
+  CreditCard,
+  ExternalLink,
+} from "lucide-react";
 
-export default function PaymentForm() {
-  const [amount, setAmount] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
+interface PaymentFormProps {
+  initialAmount?: string;
+  initialPhone?: string;
+}
+
+export default function PaymentForm({
+  initialAmount,
+  initialPhone,
+}: PaymentFormProps) {
+  const searchParams = useSearchParams();
+  const [amount, setAmount] = useState(initialAmount || "");
+  const [phoneNumber, setPhoneNumber] = useState(initialPhone || "");
   const { makePayment, payment, isLoading } = usePayment();
+
+  const returnUrl = searchParams.get("returnUrl");
+  const serviceName = searchParams.get("service") || "Aderoute";
+
+  // Pre-fill from URL params if available
+  useEffect(() => {
+    const urlAmount = searchParams.get("amount");
+    const urlPhone = searchParams.get("phone");
+
+    if (urlAmount && !amount) setAmount(urlAmount);
+    if (urlPhone && !phoneNumber) setPhoneNumber(urlPhone);
+  }, [searchParams, amount, phoneNumber]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +65,17 @@ export default function PaymentForm() {
 
   return (
     <div className="max-w-md mx-auto">
+      {/* External Service Indicator */}
+      {returnUrl && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center">
+          <ExternalLink className="w-4 h-4 text-amber-600 mr-2" />
+          <p className="text-xs text-amber-700">
+            Processing payment for{" "}
+            <span className="font-semibold">{serviceName}</span>
+          </p>
+        </div>
+      )}
+
       {/* Main payment card with frosted glass effect */}
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/50">
         {/* Security badge for trust signal */}
@@ -112,7 +152,7 @@ export default function PaymentForm() {
           </div>
         </div>
 
-        {/* Payment status display - uses internal state from usePayment hook */}
+        {/* Payment status display */}
         <PaymentStatus payment={payment} loading={isLoading} />
       </div>
 

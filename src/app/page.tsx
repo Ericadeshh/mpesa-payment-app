@@ -1,15 +1,43 @@
+"use client";
+
+import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import PaymentForm from "@/components/payments/PaymentForm";
 
 export default function Home() {
+  const searchParams = useSearchParams();
+  const returnUrl = searchParams.get("returnUrl");
+  const externalAmount = searchParams.get("amount");
+  const externalPhone = searchParams.get("phone");
+
+  // If this is an external request, we could auto-fill the form
+  // But the /pay page handles that better, so we'll just show a notice
+  useEffect(() => {
+    if (returnUrl) {
+      console.log("External payment request detected");
+      // You could show a banner or notification here
+    }
+  }, [returnUrl]);
+
   return (
     <main className="min-h-screen">
       {/* Simple, clean background - no gradients */}
       <div className="fixed inset-0 bg-gray-50 -z-20" />
 
-      {/* Removed all decorative elements - no blue gradients, no green backgrounds */}
+      {/* External Service Banner */}
+      {returnUrl && (
+        <div className="bg-amber-50 border-b border-amber-200 py-2">
+          <div className="container mx-auto px-4 text-center">
+            <p className="text-sm text-amber-700">
+              🔄 Processing payment for external service. Please complete the
+              form below.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="container mx-auto px-4 py-12">
-        {/* Header section with app title and description - NO BACKGROUND */}
+        {/* Header section with app title and description */}
         <div className="text-center mb-12">
           {/* Simple icon without green background */}
           <div className="flex justify-center mb-6">
@@ -37,7 +65,10 @@ export default function Home() {
         </div>
 
         {/* Main payment form component */}
-        <PaymentForm />
+        <PaymentForm
+          initialAmount={externalAmount || undefined}
+          initialPhone={externalPhone || undefined}
+        />
 
         {/* Trust badges */}
         <div className="mt-12 text-center">
