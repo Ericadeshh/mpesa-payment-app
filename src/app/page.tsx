@@ -1,10 +1,33 @@
 "use client";
 
+import { Suspense } from "react";
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import PaymentForm from "@/components/payments/PaymentForm";
 
-export default function Home() {
+// Loading fallback for the Suspense boundary
+function HomeLoading() {
+  return (
+    <main className="min-h-screen">
+      <div className="fixed inset-0 bg-gray-50 -z-20" />
+      <div className="container mx-auto px-4 py-12">
+        <div className="text-center mb-12">
+          <div className="flex justify-center mb-6">
+            <div className="w-20 h-20 bg-gray-200 rounded-full animate-pulse" />
+          </div>
+          <div className="h-10 w-64 bg-gray-200 rounded-lg animate-pulse mx-auto mb-2" />
+          <div className="h-6 w-96 max-w-full bg-gray-200 rounded-lg animate-pulse mx-auto" />
+        </div>
+        <div className="max-w-md mx-auto">
+          <div className="h-96 bg-gray-100 rounded-xl animate-pulse" />
+        </div>
+      </div>
+    </main>
+  );
+}
+
+// Component that uses useSearchParams (original content)
+function HomeContent() {
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get("returnUrl");
   const externalAmount = searchParams.get("amount");
@@ -20,10 +43,7 @@ export default function Home() {
   }, [returnUrl]);
 
   return (
-    <main className="min-h-screen">
-      {/* Simple, clean background - no gradients */}
-      <div className="fixed inset-0 bg-gray-50 -z-20" />
-
+    <>
       {/* External Service Banner */}
       {returnUrl && (
         <div className="bg-amber-50 border-b border-amber-200 py-2">
@@ -82,6 +102,15 @@ export default function Home() {
           </div>
         </div>
       </div>
-    </main>
+    </>
+  );
+}
+
+// Main page component with Suspense wrapper
+export default function Home() {
+  return (
+    <Suspense fallback={<HomeLoading />}>
+      <HomeContent />
+    </Suspense>
   );
 }

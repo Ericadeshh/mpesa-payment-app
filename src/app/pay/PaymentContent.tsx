@@ -16,21 +16,21 @@ import {
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 
-// Loading component
+// Loading component for Suspense
 function PaymentLoading() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 py-12">
       <div className="container mx-auto px-4 max-w-md">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden p-8 text-center">
           <RefreshCw className="w-12 h-12 text-green-500 animate-spin mx-auto mb-4" />
           <p className="text-gray-600">Loading payment details...</p>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
 
-// Main payment component
+// Main payment component that uses searchParams
 function PaymentContent() {
   const searchParams = useSearchParams();
   const { makePayment, isLoading } = usePayment();
@@ -222,7 +222,7 @@ function PaymentContent() {
   );
 }
 
-// Export the page with Suspense wrapper
+// Main page component with Suspense
 export default function PayPage() {
   return (
     <Suspense fallback={<PaymentLoading />}>
