@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { usePayment } from "@/hooks/usePayment";
 import { useSearchParams } from "next/navigation";
 import Input from "../ui/Input";
@@ -20,10 +20,61 @@ interface PaymentFormProps {
   initialPhone?: string;
 }
 
-export default function PaymentForm({
-  initialAmount,
-  initialPhone,
-}: PaymentFormProps) {
+// Loading skeleton for the payment form
+function PaymentFormSkeleton() {
+  return (
+    <div className="max-w-md mx-auto">
+      <div className="bg-white backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/50">
+        <div className="flex items-center justify-center space-x-2 mb-6">
+          <Shield className="w-4 h-4 text-green-600" />
+          <span className="text-xs text-gray-700">256-bit SSL Secured</span>
+        </div>
+
+        <div className="space-y-6">
+          {/* Phone number field skeleton */}
+          <div>
+            <div className="h-5 w-24 bg-gray-200 rounded mb-2" />
+            <div className="h-12 bg-gray-100 rounded-xl animate-pulse" />
+          </div>
+
+          {/* Amount field skeleton */}
+          <div>
+            <div className="h-5 w-24 bg-gray-200 rounded mb-2" />
+            <div className="h-12 bg-gray-100 rounded-xl animate-pulse" />
+          </div>
+
+          {/* Quick amount buttons skeleton */}
+          <div className="grid grid-cols-3 gap-2">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-10 bg-gray-100 rounded-lg animate-pulse"
+              />
+            ))}
+          </div>
+
+          {/* Submit button skeleton */}
+          <div className="h-12 bg-gray-200 rounded-xl animate-pulse" />
+        </div>
+
+        {/* Feature highlights skeleton */}
+        <div className="mt-8 grid grid-cols-3 gap-4 pt-6 border-t border-gray-200">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="text-center">
+              <div className="flex justify-center mb-2">
+                <div className="w-5 h-5 bg-gray-200 rounded-full" />
+              </div>
+              <div className="h-3 w-16 bg-gray-200 rounded mx-auto" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Component that uses useSearchParams
+function PaymentFormContent({ initialAmount, initialPhone }: PaymentFormProps) {
   const searchParams = useSearchParams();
   const [amount, setAmount] = useState(initialAmount || "");
   const [phoneNumber, setPhoneNumber] = useState(initialPhone || "");
@@ -166,5 +217,14 @@ export default function PaymentForm({
         </div>
       </div>
     </div>
+  );
+}
+
+// Main exported component with Suspense wrapper
+export default function PaymentForm(props: PaymentFormProps) {
+  return (
+    <Suspense fallback={<PaymentFormSkeleton />}>
+      <PaymentFormContent {...props} />
+    </Suspense>
   );
 }

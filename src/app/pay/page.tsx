@@ -19,7 +19,7 @@ import Button from "@/components/ui/Button";
 // Loading component
 function PaymentLoading() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 py-12">
+    <main className="min-h-screen bg-linear-to-br from-green-50 via-white to-blue-50 py-12">
       <div className="container mx-auto px-4 max-w-md">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden p-8 text-center">
           <RefreshCw className="w-12 h-12 text-green-500 animate-spin mx-auto mb-4" />
@@ -98,7 +98,7 @@ function PaymentContent() {
 
   if (paymentStatus === "success") {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 py-12">
+      <main className="min-h-screen bg-linear-to-br from-green-50 via-white to-blue-50 py-12">
         <div className="container mx-auto px-4 max-w-md">
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
             <div className="bg-green-500 p-8 text-center">
@@ -133,7 +133,7 @@ function PaymentContent() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 py-12">
+    <main className="min-h-screen bg-linear-to-br from-green-50 via-white to-blue-50 py-12">
       <div className="container mx-auto px-4 max-w-md">
         {/* External Service Badge */}
         <div className="text-center mb-6">
@@ -155,7 +155,7 @@ function PaymentContent() {
         )}
 
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-green-600 to-green-500 p-6 text-center">
+          <div className="bg-linear-to-r from-green-600 to-green-500 p-6 text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-4">
               <CreditCard className="w-8 h-8 text-white" />
             </div>
@@ -167,7 +167,7 @@ function PaymentContent() {
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {paymentStatus === "error" && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start">
-                <AlertCircle className="w-5 h-5 text-red-500 mr-3 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-red-500 mr-3 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-red-800 font-medium">Payment Failed</p>
                   <p className="text-sm text-red-600">{errorMessage}</p>

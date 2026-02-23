@@ -5,28 +5,69 @@ import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import PaymentForm from "@/components/payments/PaymentForm";
 
-// Loading fallback for the Suspense boundary
+// Simple loading fallback that matches your exact UI structure
 function HomeLoading() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-white">
+      {/* Simple, clean background - no gradients */}
       <div className="fixed inset-0 bg-gray-50 -z-20" />
+
       <div className="container mx-auto px-4 py-12">
+        {/* Header section with app title and description */}
         <div className="text-center mb-12">
+          {/* Simple icon without green background */}
           <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-gray-200 rounded-full animate-pulse" />
+            <svg
+              className="w-20 h-20 text-amber-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
           </div>
-          <div className="h-10 w-64 bg-gray-200 rounded-lg animate-pulse mx-auto mb-2" />
-          <div className="h-6 w-96 max-w-full bg-gray-200 rounded-lg animate-pulse mx-auto" />
+          <h1 className="text-4xl font-bold text-green-600 mb-2">
+            M-Pesa Express
+          </h1>
+          <p className="text-amber-600 max-w-md mx-auto">
+            Fast, secure payments directly from your phone. Enter your details
+            below to get started.
+          </p>
         </div>
-        <div className="max-w-md mx-auto">
-          <div className="h-96 bg-gray-100 rounded-xl animate-pulse" />
+
+        {/* Loading state for payment form */}
+        <div className="max-w-md mx-auto bg-white">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="space-y-4">
+              <div className="h-10 bg-gray-100 rounded animate-pulse" />
+              <div className="h-10 bg-gray-100 rounded animate-pulse" />
+              <div className="h-12 bg-gray-100 rounded animate-pulse" />
+            </div>
+          </div>
+        </div>
+
+        {/* Trust badges */}
+        <div className="mt-12 text-center">
+          <p className="text-sm text-gray-500 mb-4">
+            Trusted by 1000+ businesses
+          </p>
+          <div className="flex justify-center space-x-8">
+            <span className="text-gray-400 text-sm">✓ Secure</span>
+            <span className="text-gray-400 text-sm">✓ Instant</span>
+            <span className="text-gray-400 text-sm">✓ 24/7 Support</span>
+          </div>
         </div>
       </div>
     </main>
   );
 }
 
-// Component that uses useSearchParams (original content)
+// Component that uses useSearchParams (your original content)
 function HomeContent() {
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get("returnUrl");
@@ -43,7 +84,10 @@ function HomeContent() {
   }, [returnUrl]);
 
   return (
-    <>
+    <main className="min-h-screen bg-white">
+      {/* Simple, clean background - no gradients */}
+      <div className="fixed inset-0 bg-gray-50 -z-20" />
+
       {/* External Service Banner */}
       {returnUrl && (
         <div className="bg-amber-50 border-b border-amber-200 py-2">
@@ -102,7 +146,7 @@ function HomeContent() {
           </div>
         </div>
       </div>
-    </>
+    </main>
   );
 }
 
