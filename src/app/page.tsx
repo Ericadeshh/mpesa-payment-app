@@ -58,7 +58,7 @@ export default function Home() {
           <h1 className="text-4xl font-bold text-green-600 mb-2">
             M-Pesa Express
           </h1>
-          <p className="text-gray-600 max-w-md mx-auto">
+          <p className="text-amber-600 max-w-md mx-auto">
             Fast, secure payments directly from your phone. Enter your details
             below to get started.
           </p>
