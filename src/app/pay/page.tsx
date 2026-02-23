@@ -75,11 +75,23 @@ function PayPageContent() {
   useEffect(() => {
     const checkPaymentAndRedirect = async () => {
       // Only proceed if we have a payment and it's completed
-      if (payment?.status === "completed" && returnUrl && paymentInitiated) {
+      if (payment?.status === "completed" && paymentInitiated) {
         console.log("✅ Payment completed, redirecting...");
 
+        // Get the base returnUrl - if none exists, use a default based on service
+        let baseReturnUrl = returnUrl;
+        if (!baseReturnUrl) {
+          // Check if this is for the ISP billing system (based on plan parameter)
+          const planParam = searchParams.get("plan");
+          if (planParam) {
+            baseReturnUrl = `${window.location.origin}/payment-confirm`;
+          } else {
+            baseReturnUrl = `${window.location.origin}/hotspot/success`;
+          }
+        }
+
         // Construct redirect URL with payment details
-        const redirectUrl = new URL(decodeURIComponent(returnUrl));
+        const redirectUrl = new URL(decodeURIComponent(baseReturnUrl));
         redirectUrl.searchParams.append(
           "transactionId",
           payment.transactionId || "",
@@ -87,7 +99,18 @@ function PayPageContent() {
         redirectUrl.searchParams.append("status", "success");
         redirectUrl.searchParams.append("amount", amount);
         redirectUrl.searchParams.append("phone", phoneNumber);
-        redirectUrl.searchParams.append("plan", searchParams.get("plan") || "");
+
+        // Important: Add plan parameter if it exists
+        const planParam = searchParams.get("plan");
+        if (planParam) {
+          redirectUrl.searchParams.append("plan", planParam);
+        }
+
+        // Add customer ID if you have it
+        const customerParam = searchParams.get("customer");
+        if (customerParam) {
+          redirectUrl.searchParams.append("customer", customerParam);
+        }
 
         // Small delay to ensure user sees success message
         setTimeout(() => {
@@ -97,7 +120,7 @@ function PayPageContent() {
     };
 
     checkPaymentAndRedirect();
-  }, [payment, returnUrl, amount, phoneNumber, paymentInitiated, searchParams]);
+  }, [payment, paymentInitiated, returnUrl, amount, phoneNumber, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
