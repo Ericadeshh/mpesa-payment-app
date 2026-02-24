@@ -15,10 +15,11 @@ import {
   ExternalLink,
   ArrowLeft,
   RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
 
-// Loading skeleton for the payment form
+// Loading skeleton
 function PayPageSkeleton() {
   return (
     <main className="min-h-screen bg-white">
@@ -58,12 +59,14 @@ function PayPageContent() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentInitiated, setPaymentInitiated] = useState(false);
+  const [paymentFailed, setPaymentFailed] = useState(false);
 
   // Get parameters from external system
   const externalAmount = searchParams.get("amount");
   const externalPhone = searchParams.get("phone");
   const returnUrl = searchParams.get("returnUrl");
   const serviceName = searchParams.get("service") || "Aderoute";
+  const isAmountFixed = searchParams.get("fixed") === "true"; // Flag to fix amount
 
   // Pre-fill form with external data
   useEffect(() => {
@@ -71,27 +74,15 @@ function PayPageContent() {
     if (externalPhone) setPhoneNumber(externalPhone);
   }, [externalAmount, externalPhone]);
 
-  // Monitor payment status and redirect only when completed
+  // Monitor payment status and redirect
   useEffect(() => {
-    const checkPaymentAndRedirect = async () => {
-      // Only proceed if we have a payment and it's completed
-      if (payment?.status === "completed" && paymentInitiated) {
-        console.log("✅ Payment completed, redirecting...");
+    const handlePaymentCompletion = async () => {
+      if (!payment || !returnUrl) return;
 
-        // Get the base returnUrl - if none exists, use a default based on service
-        let baseReturnUrl = returnUrl;
-        if (!baseReturnUrl) {
-          // Check if this is for the ISP billing system (based on plan parameter)
-          const planParam = searchParams.get("plan");
-          if (planParam) {
-            baseReturnUrl = `${window.location.origin}/payment-confirm`;
-          } else {
-            baseReturnUrl = `${window.location.origin}/hotspot/success`;
-          }
-        }
+      if (payment.status === "completed" && paymentInitiated) {
+        console.log("✅ Payment completed, redirecting to success...");
 
-        // Construct redirect URL with payment details
-        const redirectUrl = new URL(decodeURIComponent(baseReturnUrl));
+        const redirectUrl = new URL(decodeURIComponent(returnUrl));
         redirectUrl.searchParams.append(
           "transactionId",
           payment.transactionId || "",
@@ -100,27 +91,26 @@ function PayPageContent() {
         redirectUrl.searchParams.append("amount", amount);
         redirectUrl.searchParams.append("phone", phoneNumber);
 
-        // Important: Add plan parameter if it exists
-        const planParam = searchParams.get("plan");
-        if (planParam) {
-          redirectUrl.searchParams.append("plan", planParam);
-        }
-
-        // Add customer ID if you have it
-        const customerParam = searchParams.get("customer");
-        if (customerParam) {
-          redirectUrl.searchParams.append("customer", customerParam);
-        }
-
-        // Small delay to ensure user sees success message
         setTimeout(() => {
           window.location.href = redirectUrl.toString();
         }, 2000);
       }
+
+      if (payment.status === "failed" && paymentInitiated) {
+        console.log("❌ Payment failed, redirecting to home...");
+        setPaymentFailed(true);
+
+        // After showing error briefly, redirect back to service home
+        setTimeout(() => {
+          // Extract base URL from returnUrl
+          const baseUrl = new URL(decodeURIComponent(returnUrl)).origin;
+          window.location.href = baseUrl;
+        }, 3000);
+      }
     };
 
-    checkPaymentAndRedirect();
-  }, [payment, paymentInitiated, returnUrl, amount, phoneNumber, searchParams]);
+    handlePaymentCompletion();
+  }, [payment, returnUrl, amount, phoneNumber, paymentInitiated]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,6 +128,7 @@ function PayPageContent() {
     }
 
     setIsSubmitting(true);
+    setPaymentFailed(false);
 
     try {
       const result = await makePayment(numAmount, cleanPhone);
@@ -155,6 +146,32 @@ function PayPageContent() {
     }
   };
 
+  // Show payment failed state
+  if (paymentFailed) {
+    return (
+      <main className="min-h-screen bg-white">
+        <div className="fixed inset-0 bg-gray-50 -z-20" />
+        <div className="container mx-auto px-4 py-12">
+          <div className="max-w-md mx-auto text-center">
+            <div className="bg-white rounded-3xl shadow-2xl p-8 border border-white/50">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-red-100 rounded-full mb-6">
+                <AlertCircle className="w-10 h-10 text-red-500" />
+              </div>
+              <h1 className="text-2xl font-bold text-navy-dark mb-2">
+                Payment Failed
+              </h1>
+              <p className="text-gray-600 mb-4">
+                Your transaction could not be completed. You will be redirected
+                back to {serviceName}.
+              </p>
+              <RefreshCw className="w-8 h-8 text-pumpkin animate-spin mx-auto" />
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-white">
       <div className="fixed inset-0 bg-gray-50 -z-20" />
@@ -170,7 +187,7 @@ function PayPageContent() {
                 <span className="font-semibold mx-1">{serviceName}</span>
               </p>
               <Link
-                href={decodeURIComponent(returnUrl)}
+                href={decodeURIComponent(returnUrl).split("?")[0]}
                 className="text-sm text-amber-700 hover:text-amber-800 flex items-center"
               >
                 <ArrowLeft className="w-4 h-4 mr-1" />
@@ -203,12 +220,11 @@ function PayPageContent() {
             M-Pesa Express
           </h1>
           <p className="text-amber-600 max-w-md mx-auto">
-            Fast, secure payments directly from your phone. Complete your
-            payment below.
+            Complete your payment for {serviceName}
           </p>
         </div>
 
-        {/* Payment Form - Exactly matching the original */}
+        {/* Payment Form */}
         <div className="max-w-md mx-auto">
           <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/50">
             {/* Security badge */}
@@ -220,7 +236,7 @@ function PayPageContent() {
             {!paymentInitiated ? (
               // Payment Form
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Phone number input */}
+                {/* Phone number input - always editable */}
                 <Input
                   label="Phone Number"
                   type="tel"
@@ -231,33 +247,54 @@ function PayPageContent() {
                   icon={<Phone className="w-5 h-5" />}
                 />
 
-                {/* Amount input */}
-                <Input
-                  label="Amount (KES)"
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="100"
-                  required
-                  min={1}
-                  icon={<CreditCard className="w-5 h-5" />}
-                />
-
-                {/* Quick amount selector */}
-                <div className="grid grid-cols-3 gap-2">
-                  {[100, 500, 1000].map((quickAmount) => (
-                    <button
-                      key={quickAmount}
-                      type="button"
-                      onClick={() => setAmount(quickAmount.toString())}
-                      className="py-2 px-1 text-sm font-medium bg-gray-100 hover:bg-green-100 
-                               text-gray-700 hover:text-green-700 rounded-lg transition-colors 
-                               border border-gray-200 hover:border-green-300"
-                    >
-                      KES {quickAmount}
-                    </button>
-                  ))}
+                {/* Amount input - conditionally disabled */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Amount (KES)
+                  </label>
+                  <div className="relative">
+                    <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="number"
+                      value={amount}
+                      onChange={(e) =>
+                        !isAmountFixed && setAmount(e.target.value)
+                      }
+                      placeholder="100"
+                      required
+                      min={1}
+                      disabled={isAmountFixed}
+                      className={`w-full pl-10 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 ${
+                        isAmountFixed
+                          ? "bg-gray-100 border-gray-300 text-gray-600 cursor-not-allowed"
+                          : "bg-white border-gray-200 focus:border-green-500 focus:ring-green-200 text-gray-900"
+                      }`}
+                    />
+                  </div>
+                  {isAmountFixed && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Amount is fixed by {serviceName}
+                    </p>
+                  )}
                 </div>
+
+                {/* Quick amount selector - only show if amount not fixed */}
+                {!isAmountFixed && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {[100, 500, 1000].map((quickAmount) => (
+                      <button
+                        key={quickAmount}
+                        type="button"
+                        onClick={() => setAmount(quickAmount.toString())}
+                        className="py-2 px-1 text-sm font-medium bg-gray-100 hover:bg-green-100 
+                                 text-gray-700 hover:text-green-700 rounded-lg transition-colors 
+                                 border border-gray-200 hover:border-green-300"
+                      >
+                        KES {quickAmount}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* Submit button */}
                 <Button type="submit" loading={isSubmitting || isLoading}>
@@ -265,7 +302,7 @@ function PayPageContent() {
                 </Button>
               </form>
             ) : (
-              // Payment Status View - Shows exactly like the original
+              // Payment Status View
               <div className="space-y-6">
                 <PaymentStatus payment={payment} loading={!payment} />
 
@@ -311,18 +348,6 @@ function PayPageContent() {
                 You&apos;ll receive an STK push on your phone
               </p>
             </div>
-          </div>
-        </div>
-
-        {/* Trust badges */}
-        <div className="mt-12 text-center">
-          <p className="text-sm text-gray-500 mb-4">
-            Trusted by 1000+ businesses
-          </p>
-          <div className="flex justify-center space-x-8">
-            <span className="text-gray-400 text-sm">✓ Secure</span>
-            <span className="text-gray-400 text-sm">✓ Instant</span>
-            <span className="text-gray-400 text-sm">✓ 24/7 Support</span>
           </div>
         </div>
       </div>
