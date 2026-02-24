@@ -66,7 +66,7 @@ export default function RootLayout({
                   <div className="relative group">
                     <button className="flex items-center space-x-1 px-3 py-2 text-green-600 hover:text-orange-500 rounded-lg hover:bg-white/30 transition-all duration-200">
                       <Globe className="w-4 h-4" />
-                      <span className="text-sm font-medium">Services</span>
+                      {/*<span className="text-sm font-medium">Services</span>*/}
                       <ChevronDown className="w-3 h-3" />
                     </button>
 
