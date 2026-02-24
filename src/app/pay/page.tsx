@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   RefreshCw,
   AlertCircle,
+  CheckCircle,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -60,6 +61,7 @@ function PayPageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentInitiated, setPaymentInitiated] = useState(false);
   const [paymentFailed, setPaymentFailed] = useState(false);
+  const [callingWebhook, setCallingWebhook] = useState(false);
 
   // Get parameters from external system
   const externalAmount = searchParams.get("amount");
@@ -67,6 +69,8 @@ function PayPageContent() {
   const returnUrl = searchParams.get("returnUrl");
   const serviceName = searchParams.get("service") || "Aderoute";
   const isAmountFixed = searchParams.get("fixed") === "true"; // Flag to fix amount
+  const planId = searchParams.get("plan");
+  const customerId = searchParams.get("customer");
 
   // Pre-fill form with external data
   useEffect(() => {
@@ -74,13 +78,52 @@ function PayPageContent() {
     if (externalPhone) setPhoneNumber(externalPhone);
   }, [externalAmount, externalPhone]);
 
+  // Call ISP billing webhook to record payment
+  const callWebhook = async (transactionId: string, status: string) => {
+    if (!returnUrl) return;
+
+    setCallingWebhook(true);
+    try {
+      const baseUrl = new URL(decodeURIComponent(returnUrl)).origin;
+      const webhookUrl = `${baseUrl}/api/mpesa-webhook`;
+
+      console.log(`📡 Calling webhook: ${webhookUrl}`);
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transactionId,
+          amount: parseFloat(amount),
+          phone: phoneNumber,
+          planId,
+          customerId,
+          status,
+        }),
+      });
+
+      if (response.ok) {
+        console.log("✅ Webhook called successfully");
+      } else {
+        console.error("❌ Webhook failed", await response.text());
+      }
+    } catch (error) {
+      console.error("❌ Webhook error:", error);
+    } finally {
+      setCallingWebhook(false);
+    }
+  };
+
   // Monitor payment status and redirect
   useEffect(() => {
     const handlePaymentCompletion = async () => {
       if (!payment || !returnUrl) return;
 
       if (payment.status === "completed" && paymentInitiated) {
-        console.log("✅ Payment completed, redirecting to success...");
+        console.log("✅ Payment completed, calling webhook...");
+
+        // Call webhook to record payment in ISP system
+        await callWebhook(payment.transactionId || "", "success");
 
         const redirectUrl = new URL(decodeURIComponent(returnUrl));
         redirectUrl.searchParams.append(
@@ -90,6 +133,8 @@ function PayPageContent() {
         redirectUrl.searchParams.append("status", "success");
         redirectUrl.searchParams.append("amount", amount);
         redirectUrl.searchParams.append("phone", phoneNumber);
+        if (planId) redirectUrl.searchParams.append("plan", planId);
+        if (customerId) redirectUrl.searchParams.append("customer", customerId);
 
         setTimeout(() => {
           window.location.href = redirectUrl.toString();
@@ -97,12 +142,14 @@ function PayPageContent() {
       }
 
       if (payment.status === "failed" && paymentInitiated) {
-        console.log("❌ Payment failed, redirecting to home...");
+        console.log("❌ Payment failed, calling webhook...");
+
+        // Call webhook to record failed payment
+        await callWebhook(payment.transactionId || "", "failed");
+
         setPaymentFailed(true);
 
-        // After showing error briefly, redirect back to service home
         setTimeout(() => {
-          // Extract base URL from returnUrl
           const baseUrl = new URL(decodeURIComponent(returnUrl)).origin;
           window.location.href = baseUrl;
         }, 3000);
@@ -110,7 +157,15 @@ function PayPageContent() {
     };
 
     handlePaymentCompletion();
-  }, [payment, returnUrl, amount, phoneNumber, paymentInitiated]);
+  }, [
+    payment,
+    returnUrl,
+    amount,
+    phoneNumber,
+    paymentInitiated,
+    planId,
+    customerId,
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,6 +220,30 @@ function PayPageContent() {
                 back to {serviceName}.
               </p>
               <RefreshCw className="w-8 h-8 text-pumpkin animate-spin mx-auto" />
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Show processing state while calling webhook
+  if (callingWebhook) {
+    return (
+      <main className="min-h-screen bg-white">
+        <div className="fixed inset-0 bg-gray-50 -z-20" />
+        <div className="container mx-auto px-4 py-12">
+          <div className="max-w-md mx-auto text-center">
+            <div className="bg-white rounded-3xl shadow-2xl p-8 border border-white/50">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
+                <RefreshCw className="w-10 h-10 text-green-600 animate-spin" />
+              </div>
+              <h1 className="text-2xl font-bold text-navy-dark mb-2">
+                Recording Payment
+              </h1>
+              <p className="text-gray-600">
+                Please wait while we update your account...
+              </p>
             </div>
           </div>
         </div>
