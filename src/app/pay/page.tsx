@@ -100,15 +100,23 @@ function PayPageContent() {
 
   // Call ISP billing webhook to record payment
   const callWebhook = async (transactionId: string, status: string) => {
-    if (!returnUrl) return;
+    console.log("🔵 WEBHOOK - Starting to call webhook");
+    console.log("🔵 WEBHOOK - Transaction ID:", transactionId);
+    console.log("🔵 WEBHOOK - Status:", status);
+    console.log("🔵 WEBHOOK - returnUrl exists:", !!returnUrl);
+
+    if (!returnUrl) {
+      console.log("🔴 WEBHOOK - No returnUrl, skipping");
+      return;
+    }
 
     setCallingWebhook(true);
     try {
       const baseUrl = new URL(decodeURIComponent(returnUrl)).origin;
       const webhookUrl = `${baseUrl}/api/mpesa-webhook`;
 
-      console.log(`📡 Calling webhook: ${webhookUrl}`);
-      console.log(`📡 With data:`, {
+      console.log("🔵 WEBHOOK - Calling URL:", webhookUrl);
+      console.log("🔵 WEBHOOK - With data:", {
         transactionId,
         amount: parseFloat(amount),
         phone: phoneNumber,
@@ -130,15 +138,11 @@ function PayPageContent() {
         }),
       });
 
+      console.log("🔵 WEBHOOK - Response status:", response.status);
       const data = await response.json();
-
-      if (response.ok) {
-        console.log("✅ Webhook called successfully:", data);
-      } else {
-        console.error("❌ Webhook failed:", data);
-      }
+      console.log("🔵 WEBHOOK - Response data:", data);
     } catch (error) {
-      console.error("❌ Webhook error:", error);
+      console.error("🔴 WEBHOOK - Error:", error);
     } finally {
       setCallingWebhook(false);
     }
@@ -155,11 +159,11 @@ function PayPageContent() {
 
         await callWebhook(payment.transactionId || "", "success");
 
-        // 🔧 FIXED: Parse the original returnUrl and force correct hostname
+        // Parse the original returnUrl and force correct hostname
         const fullReturnUrl = new URL(decodeURIComponent(returnUrl));
         console.log("🔧 Original returnUrl hostname:", fullReturnUrl.hostname);
 
-        // FORCE the correct hostname (THIS IS THE CRITICAL FIX)
+        // FORCE the correct hostname
         if (fullReturnUrl.hostname === "isp-billing-system.vercel.app") {
           fullReturnUrl.hostname = "isp-billing-system-sand.vercel.app";
           console.log("🔧 Fixed hostname to sandbox:", fullReturnUrl.hostname);
