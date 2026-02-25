@@ -16,7 +16,6 @@ import {
   ArrowLeft,
   RefreshCw,
   AlertCircle,
-  CheckCircle,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -68,7 +67,7 @@ function PayPageContent() {
   const externalPhone = searchParams.get("phone");
   const returnUrl = searchParams.get("returnUrl");
   const serviceName = searchParams.get("service") || "Aderoute";
-  const isAmountFixed = searchParams.get("fixed") === "true"; // Flag to fix amount
+  const isAmountFixed = searchParams.get("fixed") === "true";
   const planId = searchParams.get("plan");
   const customerId = searchParams.get("customer");
 
@@ -122,7 +121,6 @@ function PayPageContent() {
       if (payment.status === "completed" && paymentInitiated) {
         console.log("✅ Payment completed, calling webhook...");
 
-        // Call webhook to record payment in ISP system
         await callWebhook(payment.transactionId || "", "success");
 
         const redirectUrl = new URL(decodeURIComponent(returnUrl));
@@ -144,7 +142,6 @@ function PayPageContent() {
       if (payment.status === "failed" && paymentInitiated) {
         console.log("❌ Payment failed, calling webhook...");
 
-        // Call webhook to record failed payment
         await callWebhook(payment.transactionId || "", "failed");
 
         setPaymentFailed(true);
@@ -219,7 +216,7 @@ function PayPageContent() {
                 Your transaction could not be completed. You will be redirected
                 back to {serviceName}.
               </p>
-              <RefreshCw className="w-8 h-8 text-pumpkin animate-spin mx-auto" />
+              <RefreshCw className="w-8 h-8 text-amber-500 animate-spin mx-auto" />
             </div>
           </div>
         </div>
@@ -315,7 +312,7 @@ function PayPageContent() {
             {!paymentInitiated ? (
               // Payment Form
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Phone number input - always editable */}
+                {/* Phone number input */}
                 <Input
                   label="Phone Number"
                   type="tel"
@@ -326,7 +323,7 @@ function PayPageContent() {
                   icon={<Phone className="w-5 h-5" />}
                 />
 
-                {/* Amount input - conditionally disabled */}
+                {/* Amount input */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Amount (KES)
@@ -357,7 +354,7 @@ function PayPageContent() {
                   )}
                 </div>
 
-                {/* Quick amount selector - only show if amount not fixed */}
+                {/* Quick amount selector */}
                 {!isAmountFixed && (
                   <div className="grid grid-cols-3 gap-2">
                     {[100, 500, 1000].map((quickAmount) => (
