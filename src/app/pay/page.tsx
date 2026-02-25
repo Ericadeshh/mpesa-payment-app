@@ -68,7 +68,6 @@ function PayPageContent() {
   const returnUrl = searchParams.get("returnUrl");
   const serviceName = searchParams.get("service") || "Aderoute";
   const isAmountFixed = searchParams.get("fixed") === "true";
-  const planId = searchParams.get("plan");
   const customerId = searchParams.get("customer");
 
   // Pre-fill form with external data
@@ -80,31 +79,41 @@ function PayPageContent() {
   // Call ISP billing webhook to record payment
   const callWebhook = async (transactionId: string, status: string) => {
     if (!returnUrl) return;
-
+    
     setCallingWebhook(true);
     try {
       const baseUrl = new URL(decodeURIComponent(returnUrl)).origin;
       const webhookUrl = `${baseUrl}/api/mpesa-webhook`;
-
+      
       console.log(`📡 Calling webhook: ${webhookUrl}`);
-
+      console.log(`📡 With data:`, {
+        transactionId,
+        amount: parseFloat(amount),
+        phone: phoneNumber,
+        planCode: parseFloat(amount), // Send amount as planCode
+        customerId,
+        status
+      });
+      
       const response = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           transactionId,
           amount: parseFloat(amount),
           phone: phoneNumber,
-          planId,
+          planCode: parseFloat(amount), // ✅ Use amount as plan identifier
           customerId,
-          status,
-        }),
+          status
+        })
       });
-
+      
+      const data = await response.json();
+      
       if (response.ok) {
-        console.log("✅ Webhook called successfully");
+        console.log("✅ Webhook called successfully:", data);
       } else {
-        console.error("❌ Webhook failed", await response.text());
+        console.error("❌ Webhook failed:", data);
       }
     } catch (error) {
       console.error("❌ Webhook error:", error);
@@ -120,7 +129,7 @@ function PayPageContent() {
 
       if (payment.status === "completed" && paymentInitiated) {
         console.log("✅ Payment completed, calling webhook...");
-
+        
         await callWebhook(payment.transactionId || "", "success");
 
         const redirectUrl = new URL(decodeURIComponent(returnUrl));
@@ -131,7 +140,6 @@ function PayPageContent() {
         redirectUrl.searchParams.append("status", "success");
         redirectUrl.searchParams.append("amount", amount);
         redirectUrl.searchParams.append("phone", phoneNumber);
-        if (planId) redirectUrl.searchParams.append("plan", planId);
         if (customerId) redirectUrl.searchParams.append("customer", customerId);
 
         setTimeout(() => {
@@ -141,7 +149,7 @@ function PayPageContent() {
 
       if (payment.status === "failed" && paymentInitiated) {
         console.log("❌ Payment failed, calling webhook...");
-
+        
         await callWebhook(payment.transactionId || "", "failed");
 
         setPaymentFailed(true);
@@ -154,15 +162,7 @@ function PayPageContent() {
     };
 
     handlePaymentCompletion();
-  }, [
-    payment,
-    returnUrl,
-    amount,
-    phoneNumber,
-    paymentInitiated,
-    planId,
-    customerId,
-  ]);
+  }, [payment, returnUrl, amount, phoneNumber, paymentInitiated, customerId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
