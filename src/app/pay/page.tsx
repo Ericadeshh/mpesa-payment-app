@@ -61,6 +61,7 @@ function PayPageContent() {
   const [paymentInitiated, setPaymentInitiated] = useState(false);
   const [paymentFailed, setPaymentFailed] = useState(false);
   const [callingWebhook, setCallingWebhook] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   // Get parameters from external system
   const externalAmount = searchParams.get("amount");
@@ -69,6 +70,27 @@ function PayPageContent() {
   const serviceName = searchParams.get("service") || "Aderoute";
   const isAmountFixed = searchParams.get("fixed") === "true";
   const customerId = searchParams.get("customer");
+
+  // Debug logging
+  useEffect(() => {
+    console.log(
+      "🔍 PAYMENT DEBUG - All URL params:",
+      Object.fromEntries(searchParams),
+    );
+    console.log("🔍 PAYMENT DEBUG - returnUrl raw:", returnUrl);
+    if (returnUrl) {
+      try {
+        const decoded = decodeURIComponent(returnUrl);
+        console.log("🔍 PAYMENT DEBUG - returnUrl decoded:", decoded);
+        const url = new URL(decoded);
+        console.log("🔍 PAYMENT DEBUG - returnUrl origin:", url.origin);
+        console.log("🔍 PAYMENT DEBUG - returnUrl pathname:", url.pathname);
+        console.log("🔍 PAYMENT DEBUG - returnUrl search:", url.search);
+      } catch (e) {
+        console.error("🔍 PAYMENT DEBUG - Failed to parse returnUrl:", e);
+      }
+    }
+  }, [searchParams, returnUrl]);
 
   // Pre-fill form with external data
   useEffect(() => {
@@ -79,37 +101,37 @@ function PayPageContent() {
   // Call ISP billing webhook to record payment
   const callWebhook = async (transactionId: string, status: string) => {
     if (!returnUrl) return;
-    
+
     setCallingWebhook(true);
     try {
       const baseUrl = new URL(decodeURIComponent(returnUrl)).origin;
       const webhookUrl = `${baseUrl}/api/mpesa-webhook`;
-      
+
       console.log(`📡 Calling webhook: ${webhookUrl}`);
       console.log(`📡 With data:`, {
         transactionId,
         amount: parseFloat(amount),
         phone: phoneNumber,
-        planCode: parseFloat(amount), // Send amount as planCode
+        planCode: parseFloat(amount),
         customerId,
-        status
+        status,
       });
-      
+
       const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           transactionId,
           amount: parseFloat(amount),
           phone: phoneNumber,
-          planCode: parseFloat(amount), // ✅ Use amount as plan identifier
+          planCode: parseFloat(amount),
           customerId,
-          status
-        })
+          status,
+        }),
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
         console.log("✅ Webhook called successfully:", data);
       } else {
@@ -125,14 +147,20 @@ function PayPageContent() {
   // Monitor payment status and redirect
   useEffect(() => {
     const handlePaymentCompletion = async () => {
-      if (!payment || !returnUrl) return;
+      if (!payment || !returnUrl || redirecting) return;
 
       if (payment.status === "completed" && paymentInitiated) {
-        console.log("✅ Payment completed, calling webhook...");
-        
+        setRedirecting(true);
+        console.log("✅ Payment completed, preparing redirect...");
+
         await callWebhook(payment.transactionId || "", "success");
 
-        const redirectUrl = new URL(decodeURIComponent(returnUrl));
+        // Get the base return URL (without any query params)
+        const baseReturnUrl = decodeURIComponent(returnUrl).split("?")[0];
+        console.log("✅ Redirecting to:", baseReturnUrl);
+
+        // Construct redirect URL with payment details
+        const redirectUrl = new URL(baseReturnUrl);
         redirectUrl.searchParams.append(
           "transactionId",
           payment.transactionId || "",
@@ -142,27 +170,44 @@ function PayPageContent() {
         redirectUrl.searchParams.append("phone", phoneNumber);
         if (customerId) redirectUrl.searchParams.append("customer", customerId);
 
+        // Add plan ID from original returnUrl if present
+        const originalUrl = new URL(decodeURIComponent(returnUrl));
+        const planId = originalUrl.searchParams.get("plan");
+        if (planId) redirectUrl.searchParams.append("plan", planId);
+
+        console.log("✅ Final redirect URL:", redirectUrl.toString());
+
         setTimeout(() => {
           window.location.href = redirectUrl.toString();
         }, 2000);
       }
 
       if (payment.status === "failed" && paymentInitiated) {
-        console.log("❌ Payment failed, calling webhook...");
-        
+        setRedirecting(true);
+        console.log("❌ Payment failed, redirecting to home...");
+
         await callWebhook(payment.transactionId || "", "failed");
 
-        setPaymentFailed(true);
+        // Extract base URL from returnUrl (just the origin)
+        const baseUrl = new URL(decodeURIComponent(returnUrl)).origin;
+        console.log("❌ Redirecting to home:", baseUrl);
 
         setTimeout(() => {
-          const baseUrl = new URL(decodeURIComponent(returnUrl)).origin;
           window.location.href = baseUrl;
         }, 3000);
       }
     };
 
     handlePaymentCompletion();
-  }, [payment, returnUrl, amount, phoneNumber, paymentInitiated, customerId]);
+  }, [
+    payment,
+    returnUrl,
+    amount,
+    phoneNumber,
+    paymentInitiated,
+    customerId,
+    redirecting,
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -199,48 +244,43 @@ function PayPageContent() {
   };
 
   // Show payment failed state
-  if (paymentFailed) {
+  if (paymentFailed || redirecting) {
     return (
       <main className="min-h-screen bg-white">
         <div className="fixed inset-0 bg-gray-50 -z-20" />
         <div className="container mx-auto px-4 py-12">
           <div className="max-w-md mx-auto text-center">
             <div className="bg-white rounded-3xl shadow-2xl p-8 border border-white/50">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-red-100 rounded-full mb-6">
-                <AlertCircle className="w-10 h-10 text-red-500" />
-              </div>
-              <h1 className="text-2xl font-bold text-navy-dark mb-2">
-                Payment Failed
-              </h1>
-              <p className="text-gray-600 mb-4">
-                Your transaction could not be completed. You will be redirected
-                back to {serviceName}.
-              </p>
+              {paymentFailed ? (
+                <>
+                  <div className="inline-flex items-center justify-center w-20 h-20 bg-red-100 rounded-full mb-6">
+                    <AlertCircle className="w-10 h-10 text-red-500" />
+                  </div>
+                  <h1 className="text-2xl font-bold text-navy-dark mb-2">
+                    Payment Failed
+                  </h1>
+                  <p className="text-gray-600 mb-4">
+                    Your transaction could not be completed. Redirecting...
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
+                    <RefreshCw className="w-10 h-10 text-green-600 animate-spin" />
+                  </div>
+                  <h1 className="text-2xl font-bold text-navy-dark mb-2">
+                    {payment?.status === "completed"
+                      ? "Payment Successful!"
+                      : "Processing..."}
+                  </h1>
+                  <p className="text-gray-600 mb-4">
+                    {payment?.status === "completed"
+                      ? "Redirecting you back to the service..."
+                      : "Please wait..."}
+                  </p>
+                </>
+              )}
               <RefreshCw className="w-8 h-8 text-amber-500 animate-spin mx-auto" />
-            </div>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  // Show processing state while calling webhook
-  if (callingWebhook) {
-    return (
-      <main className="min-h-screen bg-white">
-        <div className="fixed inset-0 bg-gray-50 -z-20" />
-        <div className="container mx-auto px-4 py-12">
-          <div className="max-w-md mx-auto text-center">
-            <div className="bg-white rounded-3xl shadow-2xl p-8 border border-white/50">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
-                <RefreshCw className="w-10 h-10 text-green-600 animate-spin" />
-              </div>
-              <h1 className="text-2xl font-bold text-navy-dark mb-2">
-                Recording Payment
-              </h1>
-              <p className="text-gray-600">
-                Please wait while we update your account...
-              </p>
             </div>
           </div>
         </div>
