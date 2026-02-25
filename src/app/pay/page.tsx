@@ -155,30 +155,31 @@ function PayPageContent() {
 
         await callWebhook(payment.transactionId || "", "success");
 
-        // Get the base return URL (without any query params)
-        const baseReturnUrl = decodeURIComponent(returnUrl).split("?")[0];
-        console.log("✅ Redirecting to:", baseReturnUrl);
+        // 🔧 FIXED: Parse the original returnUrl and force correct hostname
+        const fullReturnUrl = new URL(decodeURIComponent(returnUrl));
+        console.log("🔧 Original returnUrl hostname:", fullReturnUrl.hostname);
 
-        // Construct redirect URL with payment details
-        const redirectUrl = new URL(baseReturnUrl);
-        redirectUrl.searchParams.append(
+        // FORCE the correct hostname (THIS IS THE CRITICAL FIX)
+        if (fullReturnUrl.hostname === "isp-billing-system.vercel.app") {
+          fullReturnUrl.hostname = "isp-billing-system-sand.vercel.app";
+          console.log("🔧 Fixed hostname to sandbox:", fullReturnUrl.hostname);
+        }
+
+        // Add payment details to the URL while preserving existing params
+        fullReturnUrl.searchParams.append(
           "transactionId",
           payment.transactionId || "",
         );
-        redirectUrl.searchParams.append("status", "success");
-        redirectUrl.searchParams.append("amount", amount);
-        redirectUrl.searchParams.append("phone", phoneNumber);
-        if (customerId) redirectUrl.searchParams.append("customer", customerId);
+        fullReturnUrl.searchParams.append("status", "success");
+        fullReturnUrl.searchParams.append("amount", amount);
+        fullReturnUrl.searchParams.append("phone", phoneNumber);
+        if (customerId)
+          fullReturnUrl.searchParams.append("customer", customerId);
 
-        // Add plan ID from original returnUrl if present
-        const originalUrl = new URL(decodeURIComponent(returnUrl));
-        const planId = originalUrl.searchParams.get("plan");
-        if (planId) redirectUrl.searchParams.append("plan", planId);
-
-        console.log("✅ Final redirect URL:", redirectUrl.toString());
+        console.log("✅ Final redirect URL:", fullReturnUrl.toString());
 
         setTimeout(() => {
-          window.location.href = redirectUrl.toString();
+          window.location.href = fullReturnUrl.toString();
         }, 2000);
       }
 
@@ -188,8 +189,16 @@ function PayPageContent() {
 
         await callWebhook(payment.transactionId || "", "failed");
 
-        // Extract base URL from returnUrl (just the origin)
-        const baseUrl = new URL(decodeURIComponent(returnUrl)).origin;
+        // For failed payments, extract base URL and force correct hostname
+        const fullReturnUrl = new URL(decodeURIComponent(returnUrl));
+
+        // Force correct hostname even for failed payments
+        if (fullReturnUrl.hostname === "isp-billing-system.vercel.app") {
+          fullReturnUrl.hostname = "isp-billing-system-sand.vercel.app";
+        }
+
+        // Redirect to the home page (just the origin)
+        const baseUrl = fullReturnUrl.origin;
         console.log("❌ Redirecting to home:", baseUrl);
 
         setTimeout(() => {
