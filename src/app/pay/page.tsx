@@ -239,6 +239,44 @@ function PayPageContent() {
       if (result.success) {
         setPaymentInitiated(true);
         console.log("✅ Payment initiated, waiting for confirmation...");
+
+        // ===== DIRECT WEBHOOK CALL =====
+        // Make an immediate webhook call as soon as payment is initiated
+        console.log(
+          "⚡⚡⚡ MAKING DIRECT WEBHOOK CALL FROM HANDLE SUBMIT ⚡⚡⚡",
+        );
+        if (returnUrl) {
+          try {
+            const baseUrl = new URL(decodeURIComponent(returnUrl)).origin;
+            const webhookUrl = `${baseUrl}/api/mpesa-webhook`;
+
+            const webhookData = {
+              transactionId: result.checkoutRequestId || "TEMP_" + Date.now(),
+              amount: numAmount,
+              phone: cleanPhone,
+              planCode: numAmount,
+              customerId: customerId,
+              status: "success",
+            };
+
+            console.log("⚡ Direct webhook URL:", webhookUrl);
+            console.log("⚡ Direct webhook data:", webhookData);
+
+            const webhookResponse = await fetch(webhookUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(webhookData),
+            });
+
+            const webhookResult = await webhookResponse.json();
+            console.log("⚡ Direct webhook response:", webhookResult);
+          } catch (webhookError) {
+            console.error("⚡ Direct webhook error:", webhookError);
+          }
+        } else {
+          console.log("⚡ No returnUrl available for direct webhook");
+        }
+        // ===== END DIRECT WEBHOOK CALL =====
       } else {
         alert(result.error || "Payment failed");
         setIsSubmitting(false);
