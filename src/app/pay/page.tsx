@@ -100,7 +100,7 @@ function PayPageContent() {
 
   // Call ISP billing webhook to record payment
   const callWebhook = async (transactionId: string, status: string) => {
-    console.log("🔵 WEBHOOK - Starting to call webhook");
+    console.log("🔵🔵🔵 WEBHOOK - Starting to call webhook");
     console.log("🔵 WEBHOOK - Transaction ID:", transactionId);
     console.log("🔵 WEBHOOK - Status:", status);
     console.log("🔵 WEBHOOK - returnUrl exists:", !!returnUrl);
@@ -153,21 +153,22 @@ function PayPageContent() {
     const handlePaymentCompletion = async () => {
       if (!payment || !returnUrl || redirecting) return;
 
+      console.log("🔍 Payment state:", {
+        status: payment?.status,
+        initiated: paymentInitiated,
+        hasTransactionId: !!payment?.transactionId,
+      });
+
       if (payment.status === "completed" && paymentInitiated) {
         setRedirecting(true);
-        console.log("✅ Payment completed, preparing redirect...");
+        console.log("✅ Payment completed, calling webhook IMMEDIATELY...");
 
+        // Call webhook BEFORE redirecting
         await callWebhook(payment.transactionId || "", "success");
 
-        // Parse the original returnUrl and force correct hostname
+        // Parse the original returnUrl
         const fullReturnUrl = new URL(decodeURIComponent(returnUrl));
         console.log("🔧 Original returnUrl hostname:", fullReturnUrl.hostname);
-
-        // FORCE the correct hostname
-        if (fullReturnUrl.hostname === "isp-billing-system.vercel.app") {
-          fullReturnUrl.hostname = "isp-billing-system-sand.vercel.app";
-          console.log("🔧 Fixed hostname to sandbox:", fullReturnUrl.hostname);
-        }
 
         // Add payment details to the URL while preserving existing params
         fullReturnUrl.searchParams.append(
@@ -189,19 +190,12 @@ function PayPageContent() {
 
       if (payment.status === "failed" && paymentInitiated) {
         setRedirecting(true);
-        console.log("❌ Payment failed, redirecting to home...");
+        console.log("❌ Payment failed, calling webhook...");
 
         await callWebhook(payment.transactionId || "", "failed");
 
-        // For failed payments, extract base URL and force correct hostname
+        // For failed payments, extract base URL
         const fullReturnUrl = new URL(decodeURIComponent(returnUrl));
-
-        // Force correct hostname even for failed payments
-        if (fullReturnUrl.hostname === "isp-billing-system.vercel.app") {
-          fullReturnUrl.hostname = "isp-billing-system-sand.vercel.app";
-        }
-
-        // Redirect to the home page (just the origin)
         const baseUrl = fullReturnUrl.origin;
         console.log("❌ Redirecting to home:", baseUrl);
 
