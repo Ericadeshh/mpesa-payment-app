@@ -343,15 +343,15 @@ function PayPageContent() {
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between">
               <p className="text-sm text-amber-700 flex items-center">
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Processing payment for{" "}
+                <ExternalLink className="w-3 h-3 mr-1" />
+                Transacting...{" "}
                 <span className="font-semibold mx-1">{serviceName}</span>
               </p>
               <Link
                 href={decodeURIComponent(returnUrl).split("?")[0]}
                 className="text-sm text-amber-700 hover:text-amber-800 flex items-center"
               >
-                <ArrowLeft className="w-4 h-4 mr-1" />
+                <ArrowLeft className="w-3 h-3 mr-1" />
                 Cancel
               </Link>
             </div>
