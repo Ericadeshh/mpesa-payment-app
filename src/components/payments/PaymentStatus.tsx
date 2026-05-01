@@ -12,7 +12,7 @@ export default function PaymentStatus({
 }: PaymentStatusProps) {
   if (loading) {
     return (
-      <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl">
+      <div className="mt-8 p-6 bg-linear-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl">
         <div className="flex items-center space-x-4">
           <div className="relative">
             <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
@@ -66,7 +66,7 @@ export default function PaymentStatus({
 
   return (
     <div
-      className={`mt-8 p-6 bg-gradient-to-br ${config.bg} border ${config.border} rounded-2xl shadow-sm`}
+      className={`mt-8 p-6 bg-linear-to-br ${config.bg} border ${config.border} rounded-2xl shadow-sm`}
     >
       <div className="flex items-start space-x-4">
         <div className={`${config.bgIcon} p-3 rounded-xl`}>
